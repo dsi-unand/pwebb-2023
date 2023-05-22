@@ -3,9 +3,10 @@ var router = express.Router();
 var db = require('../modules/db');
 var User = require('../models/users');
 const { response } = require('express');
+const authCheck = require('../middlewares/authCheck')
 
 /* GET users listing. */
-router.get('/', (req, res, next) => {
+router.get('/', authCheck, (req, res, next) => {
   
   //Koneksi ke database
   let connection = db.connection;
@@ -47,77 +48,61 @@ router.post('/', async (req, res, next) => {
   }).catch((err) => {
     console.log(err);
   })
+});
 
-  // let sql = "INSERT INTO users (name, email, password, avatar, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())"
-  // connection.query(
-  //   sql, 
-  //   [name, email, password, avatar, active], 
-  //   (err, rows, field) => {
-  //     if(err) throw err;
+/* EDIT USERS */
+router.post('/:id/edit', (req, res, next) => {
+  //1. Koneksi ke databaes
+  let connection = db.connection;
+  
+  //2. Ambil id data yang akan diedit
+  let id = req.params.id;
+  
+  //3. Ambil data update
+  let name = req.body.name;
+  let email = req.body.email;
+  let password = req.body.password;
+  let avatar = req.body.avatar;
+  let active = req.body.active;
+  
+  //4. Update data di database
+  let sql = "UPDATE users SET name=?, email=?, password=?, avatar=?, active=?, updated_at = now() WHERE id=?";
+  connection.query(
+    sql, 
+    [name, email, password, avatar, active, id], 
+    (err, rows, fields) => {
+      if(err) throw err;
       
-  //     let response = {
-  //       message: "Data berhasil ditambahkan",
-  //       lastId: rows.insertId,
-  //       affectedRows: rows.affectedRows
-  //     };
+      let response = {
+        message: "Data berhasil diupdate",
+        affectedRows: rows.affectedRows
+      };
       
-  //     res.json(response);
-  //   })
+      res.json(response);
+    });
   });
   
-  /* EDIT USERS */
-  router.post('/:id/edit', (req, res, next) => {
-    //1. Koneksi ke databaes
+  /* DELETE USERS */
+  router.post('/:id/delete', (req, res, next) => {
+    //1. Koneksi ke database
     let connection = db.connection;
     
-    //2. Ambil id data yang akan diedit
+    //2. Ambil ID data yang akan dihapus (M DZAKY)
     let id = req.params.id;
     
-    //3. Ambil data update
-    let name = req.body.name;
-    let email = req.body.email;
-    let password = req.body.password;
-    let avatar = req.body.avatar;
-    let active = req.body.active;
-    
-    //4. Update data di database
-    let sql = "UPDATE users SET name=?, email=?, password=?, avatar=?, active=?, updated_at = now() WHERE id=?";
-    connection.query(
-      sql, 
-      [name, email, password, avatar, active, id], 
-      (err, rows, fields) => {
-        if(err) throw err;
-        
-        let response = {
-          message: "Data berhasil diupdate",
-          affectedRows: rows.affectedRows
-        };
-        
-        res.json(response);
-      });
-    });
-    
-    /* DELETE USERS */
-    router.post('/:id/delete', (req, res, next) => {
-      //1. Koneksi ke database
-      let connection = db.connection;
+    //3. Hapus data dari database
+    let sql = 'DELETE FROM users WHERE id=?';
+    connection.query(sql, [id], (err, rows, fields) => {
+      if(err) throw err;
       
-      //2. Ambil ID data yang akan dihapus (M DZAKY)
-      let id = req.params.id;
+      let response = {
+        message: "Data berhasil dihapus",
+        affectedRows: rows.affectedRows
+      };
       
-      //3. Hapus data dari database
-      let sql = 'DELETE FROM users WHERE id=?';
-      connection.query(sql, [id], (err, rows, fields) => {
-        if(err) throw err;
-        
-        let response = {
-          message: "Data berhasil dihapus",
-          affectedRows: rows.affectedRows
-        };
-        
-        res.json(response);
-      });
+      res.json(response);
     });
-    
-    module.exports = router;
-    
+  });
+  
+  module.exports = router;
+  
